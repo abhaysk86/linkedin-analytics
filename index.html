@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Analytics — The Abhay Perspective</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- ============================================================
+       DESIGN SYSTEM — all visual variables live here.
+       Change colours, spacing, or typography in this block only.
+       Never add inline styles to HTML or JS.
+       ============================================================ -->
+  <style>
+    /* ── CSS Variables ── */
+    :root {
+      --bg-primary:    #1a1a1a;
+      --bg-surface:    #242424;
+      --bg-card:       #2a2a2a;
+      --accent:        #C4622D;
+      --accent-hover:  #d4733e;
+      --text-primary:  #FFFFFF;
+      --text-secondary:#999999;
+      --text-muted:    #666666;
+      --border:        #333333;
+      --success:       #4CAF50;
+      --error:         #f44336;
+      --chart-1:       #C4622D;
+      --chart-2:       #E8E8E8;
+
+      --radius:        8px;
+      --radius-lg:     12px;
+      --spacing-xs:    4px;
+      --spacing-sm:    8px;
+      --spacing-md:    16px;
+      --spacing-lg:    24px;
+      --spacing-xl:    32px;
+      --input-height:  48px;
+      --font:          'Inter', sans-serif;
+      --transition:    0.15s ease;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ── Layout ── */
+    .app-wrapper { max-width: 1100px; margin: 0 auto; padding: 0 var(--spacing-md); }
+
+    /* ── Header ── */
+    .app-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: var(--spacing-md) 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 var(--spacing-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+    }
+    .brand { display: flex; flex-direction: column; }
+    .brand-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.01em;
+    }
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .status-dot.connected   { background: var(--success); }
+    .status-dot.error       { background: var(--error); }
+    .status-dot.checking    { background: var(--accent); animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── Navigation ── */
+    .app-nav {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 var(--spacing-md);
+      display: flex;
+      gap: 0;
+    }
+    .nav-tab {
+      padding: var(--spacing-md) var(--spacing-lg);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color var(--transition), border-color var(--transition);
+      font-family: var(--font);
+    }
+    .nav-tab:hover  { color: var(--text-primary); }
+    .nav-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+
+    /* ── Main content area ── */
+    .view { display: none; padding: var(--spacing-lg) 0; }
+    .view.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+    }
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    /* ── Form styles ── */
+    .form-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+    .form-section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: var(--spacing-md);
+    }
+    .form-group {
+      margin-bottom: var(--spacing-md);
+    }
+    .form-group:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+    input[type="text"],
+    input[type="url"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    textarea,
+    select {
+      width: 100%;
+      height: var(--input-height);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 0.9375rem;
+      padding: 0 var(--spacing-md);
+      transition: border-color var(--transition);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    textarea {
+      height: auto;
+      padding: var(--spacing-md);
+      resize: vertical;
+    }
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    input::placeholder,
+    textarea::placeholder { color: var(--text-muted); }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+    select option { background: var(--bg-surface); }
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: var(--spacing-xs);
+    }
+
+    /* ── Metrics grid ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-sm);
+    }
+
+    /* ── Image toggle ── */
+    .toggle-group {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+    .toggle-btn {
+      flex: 1;
+      height: var(--input-height);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-family: var(--font);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .toggle-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+    .toggle-btn:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+
+    /* ── Submit button ── */
+    .btn-submit {
+      width: 100%;
+      height: 52px;
+      background: var(--accent);
+      color: var(--text-primary);
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition), opacity var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-lg);
+    }
+    .btn-submit:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Form feedback ── */
+    .form-feedback {
+      margin-top: var(--spacing-md);
+      padding: var(--spacing-md);
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-align: center;
+      display: none;
+    }
+    .form-feedback.success {
+      background: rgba(76,175,80,0.15);
+      border: 1px solid var(--success);
+      color: var(--success);
+      display: block;
+    }
+    .form-feedback.error {
+      background: rgba(244,67,54,0.15);
+      border: 1px solid var(--error);
+      color: var(--error);
+      display: block;
+    }
+    .retry-btn {
+      background: none;
+      border: 1px solid var(--error);
+      color: var(--error);
+      border-radius: var(--radius);
+      padding: var(--spacing-xs) var(--spacing-md);
+      font-family: var(--font);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      margin-top: var(--spacing-sm);
+      transition: background var(--transition);
+    }
+    .retry-btn:hover { background: rgba(244,67,54,0.1); }
+
+    /* ── Article section conditional ── */
+    .article-section { display: none; }
+    .article-section.visible { display: block; }
+
+    /* ── Dashboard grid ── */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--spacing-md);
+    }
+
+    /* ── Summary metrics row ── */
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+    }
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--spacing-md);
+    }
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--spacing-xs);
+    }
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: var(--spacing-xs);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .metric-sub a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .metric-sub a:hover { text-decoration: underline; }
+
+    /* ── Chart containers ── */
+    .chart-container {
+      position: relative;
+      width: 100%;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: var(--spacing-xl) var(--spacing-lg);
+      color: var(--text-muted);
+    }
+    .empty-state-icon {
+      font-size: 2.5rem;
+      margin-bottom: var(--spacing-md);
+      opacity: 0.4;
+    }
+    .empty-state p { font-size: 0.9375rem; }
+    .empty-state-hint {
+      font-size: 0.8125rem;
+      margin-top: var(--spacing-sm);
+      color: var(--text-muted);
+    }
+
+    /* ── Table ── */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    thead th {
+      text-align: left;
+      padding: var(--spacing-sm) var(--spacing-md);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+    thead th:hover { color: var(--text-primary); }
+    thead th.sorted { color: var(--accent); }
+    .sort-arrow { margin-left: 4px; opacity: 0.6; }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-surface); }
+    tbody td {
+      padding: var(--spacing-sm) var(--spacing-md);
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+    tbody td.muted { color: var(--text-secondary); }
+    .table-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .table-link:hover { text-decoration: underline; }
+    .type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(196,98,45,0.15);
+      color: var(--accent);
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--border);
+      margin-top: var(--spacing-md);
+    }
+    .pagination-info { font-size: 0.8125rem; color: var(--text-muted); }
+    .pagination-controls { display: flex; gap: var(--spacing-sm); }
+    .page-btn {
+      height: 32px;
+      padding: 0 var(--spacing-md);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      font-family: var(--font);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Config warning banner ── */
+    .config-banner {
+      background: rgba(196,98,45,0.1);
+      border: 1px solid rgba(196,98,45,0.3);
+      border-radius: var(--radius);
+      padding: var(--spacing-md) var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+      font-size: 0.875rem;
+      color: var(--accent);
+      display: none;
+    }
+    .config-banner.visible { display: block; }
+    .config-banner strong { font-weight: 600; }
+
+    /* ── Responsive: desktop ── */
+    @media (min-width: 768px) {
+      .summary-cards { grid-template-columns: repeat(4, 1fr); }
+      .metrics-grid  { grid-template-columns: repeat(3, 1fr); }
+      .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .full-width { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================================================
+       CONFIGURATION — paste your Apps Script Web App URL below
+       ============================================================ -->
+  <script>
+    var CONFIG = {
+      SHEET_URL: "https://script.google.com/macros/s/AKfycbzSsA6jKkz9p3eFCdPYcH1aU852fxTHN3DrlX5VPJwY1XBuuSezJXmFOFdhWLsVlUvf/exec"
+  ,
+      APP_NAME:  "LinkedIn Analytics — The Abhay Perspective"
+    };
+  </script>
+
+  <!-- ── Header ── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-name">The Abhay Perspective</span>
+        <span class="brand-sub">LinkedIn Analytics</span>
+      </div>
+      <div class="connection-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Not configured</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Navigation ── -->
+  <nav class="app-nav">
+    <div class="nav-inner">
+      <button class="nav-tab" id="tabLog" onclick="switchView('log')">Log Post</button>
+      <button class="nav-tab active" id="tabDashboard" onclick="switchView('dashboard')">Dashboard</button>
+    </div>
+  </nav>
+
+  <!-- ── Config warning ── -->
+  <div class="app-wrapper">
+    <div class="config-banner" id="configBanner">
+      <strong>Setup needed:</strong> Open <code>index.html</code>, find <code>PASTE_YOUR_WEB_APP_URL_HERE</code> at the top, and replace it with your Google Apps Script Web App URL. See SETUP.md for instructions.
+    </div>
+  </div>
+
+  <!-- ============================================================
+       VIEW 1: LOG POST FORM
+       ============================================================ -->
+  <div class="view" id="viewLog">
+    <div class="app-wrapper">
+      <form id="postForm" novalidate>
+
+        <!-- Section 1: Post Details -->
+        <div class="form-section">
+          <div class="form-section-title">Post Details</div>
+
+          <div class="form-group">
+            <label for="postDate">Post Date</label>
+            <input type="date" id="postDate" name="postDate" required />
+          </div>
+
+          <div class="form-group">
+            <label for="postTime">Post Time</label>
+            <input type="time" id="postTime" name="postTime" step="900" />
+          </div>
+
+          <div class="form-group">
+            <label for="postType">Post Type</label>
+            <select id="postType" name="postType" required>
+              <option value="">Select type…</option>
+              <option value="Post">Post</option>
+              <option value="Carousel">Carousel</option>
+              <option value="Article">Article</option>
+              <option value="Video">Video</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>With Image</label>
+            <div class="toggle-group">
+              <button type="button" class="toggle-btn" id="imgNo"  onclick="setImage('No')">No</button>
+              <button type="button" class="toggle-btn" id="imgYes" onclick="setImage('Yes')">Yes</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="hookType">Hook Type</label>
+            <select id="hookType" name="hookType" required>
+              <option value="">Select hook…</option>
+              <option value="Problem/Mistake">Problem / Mistake</option>
+              <option value="Contrarian">Contrarian</option>
+              <option value="Curiosity/Open Loop">Curiosity / Open Loop</option>
+              <option value="Data/Stat">Data / Stat</option>
+              <option value="How-To/Promise">How-To / Promise</option>
+              <option value="Story">Story</option>
+              <option value="Question">Question</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="postURL">Post URL</label>
+            <input type="url" id="postURL" name="postURL" placeholder="https://linkedin.com/posts/…" />
+          </div>
+        </div>
+
+        <!-- Section 2: Post Content -->
+        <div class="form-section">
+          <div class="form-section-title">Post Content</div>
+          <div class="form-group">
+            <label for="postText">Post Text</label>
+            <textarea id="postText" name="postText" rows="4" placeholder="Paste your post text here…"></textarea>
+            <div class="field-hint">For Carousel/Article/Video, paste the companion post text here</div>
+          </div>
+        </div>
+
+        <!-- Section 3: Article Details (conditional) -->
+        <div class="form-section article-section" id="articleSection">
+          <div class="form-section-title">Article Details</div>
+          <div class="form-group">
+            <label for="articleURL">Article URL</label>
+            <input type="url" id="articleURL" name="articleURL" placeholder="https://…" />
+          </div>
+          <div class="form-group">
+            <label for="emailOpenPct">Email Open %</label>
+            <input type="number" id="emailOpenPct" name="emailOpenPct" min="0" max="100" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label for="articlesRead">Articles Read</label>
+            <input type="number" id="articlesRead" name="articlesRead" min="0" placeholder="0" />
+          </div>
+        </div>
+
+        <!-- Section 4: 24hr Metrics -->
+        <div class="form-section">
+          <div class="form-section-title">24hr Metrics</div>
+          <div class="metrics-grid">
+            <div class="form-group">
+              <label for="impressions">Impressions</label>
+              <input type="number" id="impressions" name="impressions" min="0" placeholder="0" required />
+            </div>
+            <div class="form-group">
+              <label for="reactions">Reactions</label>
+              <input type="number" id="reactions" name="reactions" min="0" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label for="comments">Comments</label>
+              <input type="number" id="comments" name="comments" min="0" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label for="membersReached">Members Reached</label>
+              <input type="number" id="membersReached" name="membersReached" min="0" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label for="reposts">Reposts</label>
+              <input type="number" id="reposts" name="reposts" min="0" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label for="saves">Saves</label>
+              <input type="number" id="saves" name="saves" min="0" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <label for="sends">Sends</label>
+              <input type="number" id="sends" name="sends" min="0" placeholder="0" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 5: Notes -->
+        <div class="form-section">
+          <div class="form-section-title">Notes</div>
+          <div class="form-group">
+            <textarea id="notes" name="notes" rows="2" placeholder="Optional notes…"></textarea>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span id="submitBtnText">Log Post</span>
+        </button>
+        <div class="form-feedback" id="formFeedback"></div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       VIEW 2: DASHBOARD
+       ============================================================ -->
+  <div class="view active" id="viewDashboard">
+    <div class="app-wrapper">
+      <div class="dashboard-grid">
+
+        <!-- Panel 1: Weekly Summary -->
+        <div class="card full-width" id="panelSummary">
+          <div class="card-title">This Week</div>
+          <div class="summary-cards" id="summaryCards">
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <p>No data yet</p>
+              <div class="empty-state-hint">Log your first post to see your weekly summary.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Trend Line -->
+        <div class="card full-width" id="panelTrend">
+          <div class="card-title">Impressions &amp; Reactions Over Time</div>
+          <div class="chart-container" style="height:260px">
+            <canvas id="trendChart"></canvas>
+          </div>
+          <div class="empty-state" id="trendEmpty" style="display:none">
+            <div class="empty-state-icon">📈</div>
+            <p>No trend data yet</p>
+            <div class="empty-state-hint">Log at least 2 posts to see a trend.</div>
+          </div>
+        </div>
+
+        <!-- Panel 3: Format Comparison -->
+        <div class="card" id="panelFormat">
+          <div class="card-title">Format Comparison</div>
+          <div class="chart-container" style="height:220px">
+            <canvas id="formatChart"></canvas>
+          </div>
+          <div class="empty-state" id="formatEmpty" style="display:none">
+            <div class="empty-state-icon">📋</div>
+            <p>No data yet</p>
+          </div>
+        </div>
+
+        <!-- Panel 4: Hook Performance -->
+        <div class="card" id="panelHook">
+          <div class="card-title">Hook Performance</div>
+          <div class="chart-container" style="height:220px">
+            <canvas id="hookChart"></canvas>
+          </div>
+          <div class="empty-state" id="hookEmpty" style="display:none">
+            <div class="empty-state-icon">🎣</div>
+            <p>No data yet</p>
+          </div>
+        </div>
+
+        <!-- Panel 5: Post Performance Table -->
+        <div class="card full-width" id="panelTable">
+          <div class="card-title">All Posts</div>
+          <div class="empty-state" id="tableEmpty">
+            <div class="empty-state-icon">📝</div>
+            <p>No posts logged yet</p>
+            <div class="empty-state-hint">Switch to "Log Post" to add your first entry.</div>
+          </div>
+          <div id="tableContainer" style="display:none">
+            <div class="table-wrapper">
+              <table id="postsTable">
+                <thead>
+                  <tr>
+                    <th onclick="sortTable('PostDate')">Date <span class="sort-arrow">↕</span></th>
+                    <th onclick="sortTable('PostType')">Type <span class="sort-arrow">↕</span></th>
+                    <th onclick="sortTable('HookType')">Hook <span class="sort-arrow">↕</span></th>
+                    <th onclick="sortTable('Impressions')">Impr. <span class="sort-arrow">↕</span></th>
+                    <th onclick="sortTable('Reactions')">React. <span class="sort-arrow">↕</span></th>
+                    <th onclick="sortTable('Comments')">Comm. <span class="sort-arrow">↕</span></th>
+                    <th>Image</th>
+                    <th>View</th>
+                  </tr>
+                </thead>
+                <tbody id="postsTableBody"></tbody>
+              </table>
+            </div>
+            <div class="pagination" id="pagination">
+              <span class="pagination-info" id="paginationInfo"></span>
+              <div class="pagination-controls">
+                <button class="page-btn" id="prevBtn" onclick="changePage(-1)">← Prev</button>
+                <button class="page-btn" id="nextBtn" onclick="changePage(1)">Next →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT — all app logic
+       ============================================================ -->
+  <script>
+    // ── State ──────────────────────────────────────────────────
+    var state = {
+      posts:       [],
+      sortCol:     'PostDate',
+      sortDir:     -1,           // -1 = desc, 1 = asc
+      currentPage: 1,
+      pageSize:    10,
+      imageValue:  'No',
+      charts:      {}
+    };
+
+    // ── On load ────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+      setDefaultDate();
+      checkConfig();
+      loadDashboard();
+      setupPostTypeListener();
+    });
+
+    function setDefaultDate() {
+      var today = new Date().toISOString().split('T')[0];
+      document.getElementById('postDate').value = today;
+    }
+
+    // ── Config check ───────────────────────────────────────────
+    function checkConfig() {
+      var dot    = document.getElementById('statusDot');
+      var text   = document.getElementById('statusText');
+      var banner = document.getElementById('configBanner');
+      if (!CONFIG.SHEET_URL || CONFIG.SHEET_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
+        dot.className   = 'status-dot';
+        text.textContent = 'Not configured';
+        banner.classList.add('visible');
+      }
+    }
+
+    function setStatus(state) {
+      var dot  = document.getElementById('statusDot');
+      var text = document.getElementById('statusText');
+      if (state === 'checking') {
+        dot.className    = 'status-dot checking';
+        text.textContent = 'Connecting…';
+      } else if (state === 'connected') {
+        dot.className    = 'status-dot connected';
+        text.textContent = 'Connected';
+      } else {
+        dot.className    = 'status-dot error';
+        text.textContent = 'Connection failed';
+      }
+    }
+
+    // ── View switching ─────────────────────────────────────────
+    function switchView(view) {
+      document.getElementById('viewLog').classList.toggle('active', view === 'log');
+      document.getElementById('viewDashboard').classList.toggle('active', view === 'dashboard');
+      document.getElementById('tabLog').classList.toggle('active', view === 'log');
+      document.getElementById('tabDashboard').classList.toggle('active', view === 'dashboard');
+      if (view === 'dashboard') loadDashboard();
+    }
+
+    // ── Image toggle ───────────────────────────────────────────
+    function setImage(val) {
+      state.imageValue = val;
+      document.getElementById('imgNo').classList.toggle('active', val === 'No');
+      document.getElementById('imgYes').classList.toggle('active', val === 'Yes');
+    }
+    setImage('No'); // default
+
+    // ── Article section conditional ────────────────────────────
+    function setupPostTypeListener() {
+      document.getElementById('postType').addEventListener('change', function () {
+        var section = document.getElementById('articleSection');
+        section.classList.toggle('visible', this.value === 'Article');
+      });
+    }
+
+    // ── Form submission ────────────────────────────────────────
+    document.getElementById('postForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      submitPost();
+    });
+
+    function submitPost() {
+      var btn      = document.getElementById('submitBtn');
+      var btnText  = document.getElementById('submitBtnText');
+      var feedback = document.getElementById('formFeedback');
+
+      // Validate required
+      var postDate = document.getElementById('postDate').value;
+      var postType = document.getElementById('postType').value;
+      var hookType = document.getElementById('hookType').value;
+
+      if (!postDate || !postType || !hookType) {
+        showFeedback('error', 'Please fill in Date, Post Type, and Hook Type.');
+        return;
+      }
+
+      if (CONFIG.SHEET_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
+        showFeedback('error', 'Google Sheets not connected. See SETUP.md for instructions.');
+        return;
+      }
+
+      // Build payload
+      var payload = {
+        PostDate:       postDate,
+        PostTime:       document.getElementById('postTime').value,
+        PostType:       postType,
+        WithImage:      state.imageValue,
+        HookType:       hookType,
+        PostURL:        document.getElementById('postURL').value,
+        PostText:       document.getElementById('postText').value,
+        ArticleURL:     document.getElementById('articleURL').value,
+        EmailOpenPct:   document.getElementById('emailOpenPct').value,
+        ArticlesRead:   document.getElementById('articlesRead').value,
+        Impressions:    document.getElementById('impressions').value   || 0,
+        Reactions:      document.getElementById('reactions').value     || 0,
+        Comments:       document.getElementById('comments').value      || 0,
+        MembersReached: document.getElementById('membersReached').value|| 0,
+        Reposts:        document.getElementById('reposts').value       || 0,
+        Saves:          document.getElementById('saves').value         || 0,
+        Sends:          document.getElementById('sends').value         || 0,
+        Notes:          document.getElementById('notes').value
+      };
+
+      // Loading state
+      btn.disabled = true;
+      btnText.textContent = '';
+      btn.insertAdjacentHTML('afterbegin', '<div class="spinner"></div>');
+
+      fetch(CONFIG.SHEET_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify(payload)
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.success) {
+          showFeedback('success', 'Post logged ✓');
+          setTimeout(function () {
+            resetForm();
+            feedback.className = 'form-feedback';
+            feedback.style.display = 'none';
+          }, 2000);
+        } else {
+          showFeedback('error', 'Error: ' + (data.error || 'Unknown error') + '<br><button class="retry-btn" onclick="submitPost()">Retry</button>');
+        }
+      })
+      .catch(function (err) {
+        showFeedback('error', 'Could not reach Google Sheets. Check your URL.<br><button class="retry-btn" onclick="submitPost()">Retry</button>');
+      })
+      .finally(function () {
+        var spinner = btn.querySelector('.spinner');
+        if (spinner) spinner.remove();
+        btnText.textContent = 'Log Post';
+        btn.disabled = false;
+      });
+    }
+
+    function showFeedback(type, msg) {
+      var el = document.getElementById('formFeedback');
+      el.className = 'form-feedback ' + type;
+      el.innerHTML = msg;
+    }
+
+    function resetForm() {
+      document.getElementById('postForm').reset();
+      setDefaultDate();
+      setImage('No');
+      document.getElementById('articleSection').classList.remove('visible');
+    }
+
+    // ── Dashboard data loading ─────────────────────────────────
+    function loadDashboard() {
+      if (!CONFIG.SHEET_URL || CONFIG.SHEET_URL === 'PASTE_YOUR_WEB_APP_URL_HERE') {
+        renderDashboard([]);
+        return;
+      }
+      setStatus('checking');
+      fetch(CONFIG.SHEET_URL)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.success) {
+            setStatus('connected');
+            state.posts = data.data || [];
+            renderDashboard(state.posts);
+          } else {
+            setStatus('error');
+            renderDashboard([]);
+          }
+        })
+        .catch(function () {
+          setStatus('error');
+          renderDashboard([]);
+        });
+    }
+
+    // ── Dashboard rendering ────────────────────────────────────
+    function renderDashboard(posts) {
+      renderSummary(posts);
+      renderTrend(posts);
+      renderFormat(posts);
+      renderHooks(posts);
+      renderTable(posts);
+    }
+
+    // ── Panel 1: Weekly Summary ────────────────────────────────
+    function renderSummary(posts) {
+      var container = document.getElementById('summaryCards');
+      var now       = new Date();
+      var weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay()); // Sunday
+      weekStart.setHours(0, 0, 0, 0);
+
+      var weekPosts = posts.filter(function (p) {
+        var d = new Date(p.PostDate);
+        return d >= weekStart;
+      });
+
+      if (posts.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📊</div><p>No data yet</p><div class="empty-state-hint">Log your first post to see your weekly summary.</div></div>';
+        return;
+      }
+
+      var totalImpr  = weekPosts.reduce(function (s, p) { return s + (Number(p.Impressions) || 0); }, 0);
+      var avgReact   = weekPosts.length ? Math.round(weekPosts.reduce(function (s, p) { return s + (Number(p.Reactions) || 0); }, 0) / weekPosts.length) : 0;
+      var totalPosts = weekPosts.length;
+
+      // Best post this week (by impressions), fallback to all time
+      var pool     = weekPosts.length ? weekPosts : posts;
+      var bestPost = pool.reduce(function (best, p) {
+        return (Number(p.Impressions) || 0) > (Number(best.Impressions) || 0) ? p : best;
+      }, pool[0]);
+
+      var bestLabel = (bestPost.PostText || bestPost.HookType || 'View post').substring(0, 40);
+
+      container.innerHTML =
+        metricCard('Total Impressions', fmtNum(totalImpr), weekPosts.length + ' posts this week') +
+        metricCard('Avg Reactions',     avgReact,          weekPosts.length ? 'This week' : 'No posts this week') +
+        metricCard('Posts This Week',   totalPosts,        'Since Sunday') +
+        metricCard('Best Post',         '&#x2197;',        bestPost.PostURL
+          ? '<a href="' + bestPost.PostURL + '" target="_blank" rel="noopener">' + bestLabel + '…</a>'
+          : bestLabel + '…');
+    }
+
+    function metricCard(label, value, sub) {
+      return '<div class="metric-card">' +
+        '<div class="metric-label">' + label + '</div>' +
+        '<div class="metric-value">' + value + '</div>' +
+        '<div class="metric-sub">' + sub + '</div>' +
+        '</div>';
+    }
+
+    // ── Panel 2: Trend Line ────────────────────────────────────
+    function renderTrend(posts) {
+      var canvas = document.getElementById('trendChart');
+      var empty  = document.getElementById('trendEmpty');
+
+      if (state.charts.trend) { state.charts.trend.destroy(); }
+
+      if (posts.length < 2) {
+        canvas.style.display = 'none';
+        empty.style.display  = 'block';
+        return;
+      }
+      canvas.style.display = 'block';
+      empty.style.display  = 'none';
+
+      var sorted = posts.slice().sort(function (a, b) { return new Date(a.PostDate) - new Date(b.PostDate); });
+      var labels = sorted.map(function (p) { return fmtDate(p.PostDate); });
+      var impr   = sorted.map(function (p) { return Number(p.Impressions) || 0; });
+      var react  = sorted.map(function (p) { return Number(p.Reactions)   || 0; });
+
+      state.charts.trend = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Impressions',
+              data:  impr,
+              borderColor:     getComputedStyle(document.documentElement).getPropertyValue('--chart-1').trim(),
+              backgroundColor: 'rgba(196,98,45,0.12)',
+              borderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.35
+            },
+            {
+              label: 'Reactions',
+              data:  react,
+              borderColor:     getComputedStyle(document.documentElement).getPropertyValue('--chart-2').trim(),
+              backgroundColor: 'rgba(232,232,232,0.06)',
+              borderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.35
+            }
+          ]
+        },
+        options: chartOptions({ legend: true })
+      });
+    }
+
+    // ── Panel 3: Format Comparison ─────────────────────────────
+    function renderFormat(posts) {
+      var canvas = document.getElementById('formatChart');
+      var empty  = document.getElementById('formatEmpty');
+
+      if (state.charts.format) { state.charts.format.destroy(); }
+
+      if (!posts.length) {
+        canvas.style.display = 'none';
+        empty.style.display  = 'block';
+        return;
+      }
+      canvas.style.display = 'block';
+      empty.style.display  = 'none';
+
+      var types  = ['Post', 'Carousel', 'Article', 'Video'];
+      var avgI   = [], avgR = [], counts = [];
+
+      types.forEach(function (t) {
+        var group = posts.filter(function (p) { return p.PostType === t; });
+        counts.push(group.length);
+        avgI.push(group.length ? Math.round(group.reduce(function (s, p) { return s + (Number(p.Impressions) || 0); }, 0) / group.length) : 0);
+        avgR.push(group.length ? Math.round(group.reduce(function (s, p) { return s + (Number(p.Reactions)   || 0); }, 0) / group.length) : 0);
+      });
+
+      var labels = types.map(function (t, i) { return t + (counts[i] ? ' (n=' + counts[i] + ')' : ''); });
+
+      state.charts.format = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Avg Impressions', data: avgI, backgroundColor: 'rgba(196,98,45,0.85)', borderRadius: 4 },
+            { label: 'Avg Reactions',   data: avgR, backgroundColor: 'rgba(232,232,232,0.6)', borderRadius: 4 }
+          ]
+        },
+        options: chartOptions({ legend: true })
+      });
+    }
+
+    // ── Panel 4: Hook Performance ──────────────────────────────
+    function renderHooks(posts) {
+      var canvas = document.getElementById('hookChart');
+      var empty  = document.getElementById('hookEmpty');
+
+      if (state.charts.hook) { state.charts.hook.destroy(); }
+
+      if (!posts.length) {
+        canvas.style.display = 'none';
+        empty.style.display  = 'block';
+        return;
+      }
+      canvas.style.display = 'block';
+      empty.style.display  = 'none';
+
+      var hooks = ['Problem/Mistake','Contrarian','Curiosity/Open Loop','Data/Stat','How-To/Promise','Story','Question'];
+      var data  = hooks.map(function (h) {
+        var group = posts.filter(function (p) { return p.HookType === h; });
+        return group.length ? Math.round(group.reduce(function (s, p) { return s + (Number(p.Impressions) || 0); }, 0) / group.length) : 0;
+      });
+
+      // Sort descending for readability
+      var paired = hooks.map(function (h, i) { return { label: h, val: data[i] }; });
+      paired.sort(function (a, b) { return b.val - a.val; });
+
+      state.charts.hook = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: paired.map(function (p) { return p.label; }),
+          datasets: [{
+            label: 'Avg Impressions',
+            data:  paired.map(function (p) { return p.val; }),
+            backgroundColor: 'rgba(196,98,45,0.85)',
+            borderRadius: 4
+          }]
+        },
+        options: chartOptions({ indexAxis: 'y', legend: false })
+      });
+    }
+
+    // ── Panel 5: Post Table ────────────────────────────────────
+    function renderTable(posts) {
+      var empty     = document.getElementById('tableEmpty');
+      var container = document.getElementById('tableContainer');
+
+      if (!posts.length) {
+        empty.style.display     = 'block';
+        container.style.display = 'none';
+        return;
+      }
+      empty.style.display     = 'none';
+      container.style.display = 'block';
+
+      state.currentPage = 1;
+      drawTablePage(posts);
+    }
+
+    function drawTablePage(postsArg) {
+      var posts = postsArg || state.posts;
+
+      // Sort
+      var sorted = posts.slice().sort(function (a, b) {
+        var va = a[state.sortCol], vb = b[state.sortCol];
+        if (!isNaN(Number(va)) && !isNaN(Number(vb))) { va = Number(va); vb = Number(vb); }
+        if (va < vb) return -state.sortDir;
+        if (va > vb) return  state.sortDir;
+        return 0;
+      });
+
+      var total   = sorted.length;
+      var pages   = Math.ceil(total / state.pageSize);
+      var start   = (state.currentPage - 1) * state.pageSize;
+      var page    = sorted.slice(start, start + state.pageSize);
+
+      var tbody = document.getElementById('postsTableBody');
+      tbody.innerHTML = page.map(function (p) {
+        return '<tr>' +
+          '<td class="muted">' + fmtDate(p.PostDate) + '</td>' +
+          '<td><span class="type-badge">' + (p.PostType || '—') + '</span></td>' +
+          '<td class="muted">' + (p.HookType || '—') + '</td>' +
+          '<td>' + fmtNum(p.Impressions) + '</td>' +
+          '<td>' + fmtNum(p.Reactions)   + '</td>' +
+          '<td>' + fmtNum(p.Comments)    + '</td>' +
+          '<td class="muted">' + (p.WithImage === 'Yes' ? '✓' : '—') + '</td>' +
+          '<td>' + (p.PostURL ? '<a class="table-link" href="' + p.PostURL + '" target="_blank" rel="noopener">View</a>' : '—') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('paginationInfo').textContent =
+        'Showing ' + (start + 1) + '–' + Math.min(start + state.pageSize, total) + ' of ' + total;
+      document.getElementById('prevBtn').disabled = state.currentPage === 1;
+      document.getElementById('nextBtn').disabled = state.currentPage >= pages;
+
+      // Update sort arrows in headers
+      document.querySelectorAll('thead th').forEach(function (th) {
+        th.classList.remove('sorted');
+        var arrow = th.querySelector('.sort-arrow');
+        if (arrow) arrow.textContent = '↕';
+      });
+      var colMap = { PostDate: 0, PostType: 1, HookType: 2, Impressions: 3, Reactions: 4, Comments: 5 };
+      var idx = colMap[state.sortCol];
+      if (idx !== undefined) {
+        var headers = document.querySelectorAll('thead th');
+        headers[idx].classList.add('sorted');
+        var arrow = headers[idx].querySelector('.sort-arrow');
+        if (arrow) arrow.textContent = state.sortDir === -1 ? '↓' : '↑';
+      }
+    }
+
+    function sortTable(col) {
+      if (state.sortCol === col) { state.sortDir *= -1; } else { state.sortCol = col; state.sortDir = -1; }
+      state.currentPage = 1;
+      drawTablePage(state.posts);
+    }
+
+    function changePage(dir) {
+      var total = state.posts.length;
+      var pages = Math.ceil(total / state.pageSize);
+      state.currentPage = Math.max(1, Math.min(pages, state.currentPage + dir));
+      drawTablePage(state.posts);
+    }
+
+    // ── Chart.js shared options ────────────────────────────────
+    function chartOptions(opts) {
+      opts = opts || {};
+      return {
+        responsive:          true,
+        maintainAspectRatio: false,
+        indexAxis:           opts.indexAxis || 'x',
+        plugins: {
+          legend: {
+            display: !!opts.legend,
+            labels: { color: '#999999', font: { family: "'Inter', sans-serif", size: 12 }, boxWidth: 12 }
+          },
+          tooltip: {
+            backgroundColor: '#2a2a2a',
+            borderColor:     '#333333',
+            borderWidth:     1,
+            titleColor:      '#ffffff',
+            bodyColor:       '#999999',
+            padding:         10
+          }
+        },
+        scales: {
+          x: {
+            ticks:  { color: '#666666', font: { family: "'Inter', sans-serif", size: 11 }, maxRotation: 45 },
+            grid:   { color: '#2a2a2a' }
+          },
+          y: {
+            ticks:  { color: '#666666', font: { family: "'Inter', sans-serif", size: 11 } },
+            grid:   { color: '#2a2a2a' },
+            beginAtZero: true
+          }
+        }
+      };
+    }
+
+    // ── Helpers ────────────────────────────────────────────────
+    function fmtNum(n) {
+      var num = Number(n) || 0;
+      if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+      return num;
+    }
+
+    function fmtDate(d) {
+      if (!d) return '—';
+      var date = new Date(d);
+      if (isNaN(date)) return d;
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+    }
+  </script>
+
+</body>
+</html>
