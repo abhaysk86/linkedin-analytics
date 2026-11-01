@@ -1,0 +1,151 @@
+// ============================================================
+// LinkedIn Analytics Dashboard — Google Apps Script
+// The Abhay Perspective
+//
+// Deploy as Web App:
+//   Execute as: Me
+//   Who has access: Anyone
+//
+// Sheet name must be exactly: Posts
+// ============================================================
+
+var SHEET_NAME = "Posts";
+
+var COLUMNS = [
+  "Timestamp",
+  "PostDate",
+  "PostTime",
+  "PostType",
+  "WithImage",
+  "HookType",
+  "PostURL",
+  "PostText",
+  "ArticleURL",
+  "EmailOpenPct",
+  "ArticlesRead",
+  "Impressions",
+  "Reactions",
+  "Comments",
+  "MembersReached",
+  "Reposts",
+  "Saves",
+  "Sends",
+  "Notes"
+];
+
+// ── CORS helper ──────────────────────────────────────────────
+function corsHeaders() {
+  return ContentService.createTextOutput()
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function jsonResponse(data, statusCode) {
+  var output = ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+  return output;
+}
+
+// ── POST: append a new post row ──────────────────────────────
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents);
+
+    // Validate required fields
+    var required = ["PostDate", "PostType", "HookType", "Impressions"];
+    for (var i = 0; i < required.length; i++) {
+      if (!body[required[i]] && body[required[i]] !== 0) {
+        return jsonResponse({
+          success: false,
+          error: "Missing required field: " + required[i]
+        });
+      }
+    }
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      // Create sheet with headers if it doesn't exist
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(COLUMNS);
+    }
+
+    // Ensure header row exists
+    var lastRow = sheet.getLastRow();
+    if (lastRow === 0) {
+      sheet.appendRow(COLUMNS);
+    }
+
+    // Build row in exact column order
+    var row = [
+      new Date().toISOString(),          // Timestamp
+      body.PostDate        || "",
+      body.PostTime        || "",
+      body.PostType        || "",
+      body.WithImage       || "No",
+      body.HookType        || "",
+      body.PostURL         || "",
+      body.PostText        || "",
+      body.ArticleURL      || "",
+      body.EmailOpenPct    || "",
+      body.ArticlesRead    || "",
+      Number(body.Impressions)    || 0,
+      Number(body.Reactions)      || 0,
+      Number(body.Comments)       || 0,
+      Number(body.MembersReached) || 0,
+      Number(body.Reposts)        || 0,
+      Number(body.Saves)          || 0,
+      Number(body.Sends)          || 0,
+      body.Notes           || ""
+    ];
+
+    sheet.appendRow(row);
+
+    return jsonResponse({ success: true, message: "Post logged successfully." });
+
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.message });
+  }
+}
+
+// ── GET: return all posts as JSON array ──────────────────────
+function doGet(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      return jsonResponse({ success: true, data: [] });
+    }
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+
+    // No data rows yet (only header or empty)
+    if (lastRow <= 1) {
+      return jsonResponse({ success: true, data: [] });
+    }
+
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var rows    = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+
+    var data = rows.map(function(row) {
+      var obj = {};
+      headers.forEach(function(header, idx) {
+        var val = row[idx];
+        // Convert Date objects to ISO string
+        if (val instanceof Date) {
+          obj[header] = val.toISOString();
+        } else {
+          obj[header] = val;
+        }
+      });
+      return obj;
+    });
+
+    return jsonResponse({ success: true, data: data });
+
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.message });
+  }
+}

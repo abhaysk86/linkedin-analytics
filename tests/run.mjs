@@ -15,3 +15,8 @@ assert.equal(call({action:'bootstrap',accessKey:'wrong'}).code,'AUTH');const op=
 console.log('All parser, classification, date, metric, auth, revision and retry tests passed.');
 
 assert.deepEqual(parseScreenshotText("Impressions 1,234\nMembers reached 987\nReactions 24\nComments 3\nReposts 1\nSaves 2\nSends 0").patch,{impressions:1234,reactions:24,comments:3,members_reached:987,reposts:1,saves:2,sends:0});
+let failFlush=true;context.SpreadsheetApp.flush=()=>{if(failFlush){failFlush=false;throw Error('Simulated interrupted write');}};
+const interrupted={...op,requestId:'request-interrupt-01',post:{...op.post,post_id:'post-interrupt-01',primary_measurement_id:'measurement-interrupt-01'},measurement:{...op.measurement,measurement_id:'measurement-interrupt-01'}};
+assert.equal(call(interrupted).ok,false);assert.equal(call({action:'bootstrap'}).posts.length,2);assert.equal(call(interrupted).replayed,true);assert.equal(call({action:'bootstrap'}).measurements.length,2);
+key='';assert.equal(call({action:'bootstrap',accessKey:''}).ok,true);
+console.log('Interrupted-write recovery and owner-selected public mode passed.');
