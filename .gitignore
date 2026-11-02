@@ -2,3 +2,6 @@ node_modules/
 .DS_Store
 .env*
 private/
+Latest Example Screenshots/
+tests/local-real.html
+private-test-results/

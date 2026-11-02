@@ -20,3 +20,12 @@ const interrupted={...op,requestId:'request-interrupt-01',post:{...op.post,post_
 assert.equal(call(interrupted).ok,false);assert.equal(call({action:'bootstrap'}).posts.length,2);assert.equal(call(interrupted).replayed,true);assert.equal(call({action:'bootstrap'}).measurements.length,2);
 key='';assert.equal(call({action:'bootstrap',accessKey:''}).ok,true);
 console.log('Interrupted-write recovery and owner-selected public mode passed.');
+// Regressions from real iPhone OCR: spaced digits, chevrons, and full labels.
+assert.deepEqual(parseScreenshotText('1 1 0 Impressions\nIn-network 36%\n75 Members reached\nReactions 1)\nComments 0\nReposts 0\nSaves 0\nSends on LinkedIn 0\nCompany size\n10,001+ employees 51%').patch,{impressions:110,reactions:1,comments:0,members_reached:75,reposts:0,saves:0,sends:0});
+const {extractPostText}=await import('../src/core.js');
+assert.equal(extractPostText('Post analytics\nDiscovery\n110 Impressions\n75 Members reached'),'');
+assert.equal(extractPostText('Read my update\nPost text or opening lines\n110 impressions'),'');
+const content=extractPostText('8:51\nSearch\nAn AI agent completes your booking. A human made the phone call.\n\nThe service connects assistants to people who finish the remaining work.\nHome Network Post Notifications Jobs');
+assert.ok(content.startsWith('An AI agent'));assert.ok(!content.includes('Home Network'));assert.equal(classify(content).category,'Contrarian');
+console.log('Real iPhone OCR patterns and post-text classification passed.');
+assert.ok(extractPostText('An Al agent completes your booking. A human made the phone call.\nThis service connects Al assistants and background-checked humans who finish the remaining work.').startsWith('An AI agent'));

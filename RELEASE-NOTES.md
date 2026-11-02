@@ -26,3 +26,9 @@ OCR engine/core/language assets currently load on demand from pinned CDN URLs. I
 ## Follow-up polish
 
 User posting targets, crop/rotate tools, and full multi-column customization are not included in this release. Desktop metric selection, publication-time buckets and per-1,000 useful-engagement views are included. Current screens support the principal capture/edit/analysis workflow. Imported ambiguous zeros do not contribute to precision-sensitive interaction-rate cards until corrected/confirmed.
+
+## Capture fixes — 2 November
+
+Regression-tested against the owner's actual iPhone examples (private files excluded from Git): 110 impressions, 75 reached, 1 reaction, and zeros for comments/reposts/saves/sends. OCR now handles spaced digits and trailing navigation glyphs, reads content screenshots into post text, and runs hook/topic rules on that text. New records require an opening/title so blank entries cannot silently become Untitled.
+
+New capture timing defaults to Now at review; old draft timestamps are discarded. Existing observation times remain intact during corrections. Earlier and Unknown are explicit choices. Phone fields use one column with constrained native date/time inputs; the floating Save bar was removed, and post actions wrap without squeezing words into narrow columns. Frontend module URLs are versioned together to prevent mixed cached module versions during an installed-app update.
