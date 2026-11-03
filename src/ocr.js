@@ -1,10 +1,10 @@
-import {parseScreenshotText,extractPostText} from './core.js?v=20261102-3';
+import {parseScreenshotText,extractPostText,mergeScreenshotResults} from './core.js?v=20261103-2';
 let worker;
 export async function readScreenshots(files,onProgress,signal){
   if(files.length>6)throw Error('Choose at most six screenshots for one post.');
   const lib=await import('https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.esm.min.js');
   const createWorker=lib.createWorker||lib.default.createWorker;
-  const pages=[],patch={},evidence={},conflicts=new Set();
+  const pages=[],results=[];
   try{
     worker=await createWorker('eng',1,{workerPath:'https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/worker.min.js',corePath:'https://cdn.jsdelivr.net/npm/tesseract.js-core@6.0.0',langPath:'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int',logger:m=>onProgress(m.status+' '+Math.round((m.progress||0)*100)+'%')});
     for(const [index,file]of [...files].entries()){
@@ -21,17 +21,12 @@ export async function readScreenshots(files,onProgress,signal){
       if(/(?:past (?:7|28|90|365) days|combined post analytics)/i.test(text))throw Error('Choose the analytics for one post, rather than account analytics.');
       const parsed=parseScreenshotText(text),postText=extractPostText(text);
       pages.push({file:file.name,text,postText});
-      for(const key of parsed.conflicts)conflicts.add(key);
-      for(const [key,value]of Object.entries(parsed.patch)){
-        if(key in patch&&patch[key]!==value){conflicts.add(key);delete patch[key];}
-        else if(!conflicts.has(key))patch[key]=value;
-        evidence[key]=parsed.evidence[key];
-      }
+      results.push({...parsed,postText});
     }
-    const bodies=pages.map(p=>p.postText).filter(Boolean);
-    if(bodies.length){patch.post_text=[...new Set(bodies)].join('\n\n');evidence.post_text='Post text read from content screenshot. Review the opening and wording.';}
+    const merged=mergeScreenshotResults(results),{patch,evidence}=merged;
+    if(patch.articles_read!=null||patch.email_sends!=null)patch.format='Article';
     if(!Object.keys(patch).length)throw Error('No readable post text or labelled metrics found. Try a clearer screenshot or enter the fields below.');
-    return {patch,evidence,conflicts:[...conflicts],text:pages.map(p=>p.text).join('\n'),pages,approximate:Object.values(evidence).some(s=>/\d[\d.,]*[ \t]*[kKmM]\b/.test(s))};
+    return {...merged,text:pages.map(p=>p.text).join('\n'),pages,approximate:Object.values(evidence).some(s=>/\d[\d.,]*[ \t]*[kKmM]\b/.test(s))};
   }finally{if(worker){await worker.terminate();worker=null;}}
 }
 export function cancelOCR(){if(worker){worker.terminate();worker=null;}}

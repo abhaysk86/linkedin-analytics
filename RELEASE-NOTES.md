@@ -32,3 +32,11 @@ User posting targets, crop/rotate tools, and full multi-column customization are
 Regression-tested against the owner's actual iPhone examples (private files excluded from Git): 110 impressions, 75 reached, 1 reaction, and zeros for comments/reposts/saves/sends. OCR now handles spaced digits and trailing navigation glyphs, reads content screenshots into post text, and runs hook/topic rules on that text. New records require an opening/title so blank entries cannot silently become Untitled.
 
 New capture timing defaults to Now at review; old draft timestamps are discarded. Existing observation times remain intact during corrections. Earlier and Unknown are explicit choices. Phone fields use one column with constrained native date/time inputs; the floating Save bar was removed, and post actions wrap without squeezing words into narrow columns. Frontend module URLs are versioned together to prevent mixed cached module versions during an installed-app update.
+
+## 3 November — article capture reliability
+
+- Match complete OCR metric labels so email sends cannot conflict with LinkedIn sends. Store email sends, article views/open rate and post-attributed profile activity separately.
+- Keep all readable fields when one field conflicts; leave only the disputed field blank with a review message. Preserve OCR-filled drafts and explicit earlier observation times.
+- Strip newsletter header noise from captured post text, correct common OCR I/AI artifacts and suggest a problem/mistake hook for a broken-result opening.
+- Reproduce with the three supplied iPhone screenshots: 109 impressions, 62 reached, 5 reactions, 57 article views, 133 email sends, 26% email open rate, and confirmed zeros for other shown metrics.
+- Backend deployment version 4 retains the same URL and access setting.

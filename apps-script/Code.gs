@@ -1,6 +1,6 @@
 /* Perspective v2. Bound to the existing spreadsheet. No credentials in source. */
 var V2_POSTS='PostsV2', V2_METRICS='MeasurementsV2', V2_OPS='OperationsV2';
-var METRIC_KEYS=['impressions','reactions','comments','members_reached','reposts','saves','sends','articles_read','email_open_pct'];
+var METRIC_KEYS=['impressions','reactions','comments','members_reached','reposts','saves','sends','articles_read','email_open_pct','email_sends','profile_viewers','followers_gained'];
 function json_(o){return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);}
 function ss_(){return SpreadsheetApp.getActiveSpreadsheet();}
 function table_(name){var s=ss_().getSheetByName(name);if(!s){s=ss_().insertSheet(name);s.appendRow(['id','revision','json']);s.setFrozenRows(1);}return s;}

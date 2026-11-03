@@ -29,3 +29,24 @@ const content=extractPostText('8:51\nSearch\nAn AI agent completes your booking.
 assert.ok(content.startsWith('An AI agent'));assert.ok(!content.includes('Home Network'));assert.equal(classify(content).category,'Contrarian');
 console.log('Real iPhone OCR patterns and post-text classification passed.');
 assert.ok(extractPostText('An Al agent completes your booking. A human made the phone call.\nThis service connects Al assistants and background-checked humans who finish the remaining work.').startsWith('An AI agent'));
+
+// Article/newsletter analytics must keep email distribution separate from post sends.
+const {mergeScreenshotResults}=await import('../src/core.js');
+const articleRows='Article performance\n57 Article views\nEmail sends 133\nEmail open rate 26%\n0 Profile viewers from this post\n0 Followers gained from this post\n5 Social engagements\nReactions 5)\nComments 0\nReposts 0\nSaves 0\nSends on LinkedIn 0';
+assert.deepEqual(parseScreenshotText(articleRows).patch,{reactions:5,comments:0,reposts:0,saves:0,sends:0,articles_read:57,email_sends:133,email_open_pct:26,profile_viewers:0,followers_gained:0});
+assert.deepEqual(parseScreenshotText(articleRows).conflicts,[]);
+assert.equal(parseScreenshotText('Email sends 133').patch.sends,undefined);
+assert.equal(parseScreenshotText('Email open rate 26.4%').patch.email_open_pct,26.4);
+assert.equal(parseScreenshotText('Email open rate 126%').patch.email_open_pct,undefined);
+const conflicted=mergeScreenshotResults([{patch:{impressions:109,sends:133},evidence:{},postText:'A captured opening'}, {patch:{reactions:5},evidence:{},conflicts:['sends']}]);
+assert.deepEqual(conflicted.patch,{impressions:109,reactions:5,post_text:'A captured opening'});
+assert.deepEqual(conflicted.conflicts,['sends']);
+assert.deepEqual(mergeScreenshotResults([{patch:{sends:0},evidence:{}},{patch:{sends:2,comments:0},evidence:{}},{patch:{sends:0},evidence:{}}]).patch,{comments:0});
+const newsletter=extractPostText('WY view my newsletter .\n\n1d. ®\nAl rebuilt my website in three hours. Then | found six\nthings wrong.\nPart of my name was hidden on mobile. A section was cut off at the edge.');
+assert.ok(newsletter.startsWith('AI rebuilt my website in three hours. Then I found six things wrong.'));
+assert.equal(classify(newsletter).category,'Problem/Mistake');
+const articleSave={...op,requestId:'request-article-01',post:{...op.post,post_id:'post-article-0001',format:'Article',primary_measurement_id:'measurement-article-01'},measurement:{measurement_id:'measurement-article-01',...parseScreenshotText(articleRows).patch,captured_at_utc:'2026-11-03T03:30:00.000Z'}};
+assert.equal(call(articleSave).ok,true);
+const storedArticle=call({action:'bootstrap'}).measurements.find(m=>m.measurement_id==='measurement-article-01');
+assert.equal(storedArticle.sends,0);assert.equal(storedArticle.email_sends,133);assert.equal(storedArticle.articles_read,57);assert.equal(storedArticle.profile_viewers,0);assert.equal(storedArticle.followers_gained,0);assert.equal(storedArticle.captured_at_utc,'2026-11-03T03:30:00.000Z');
+console.log('Article capture, partial conflicts, newsletter text and Sheet round-trip regressions passed.');

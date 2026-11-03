@@ -15,3 +15,5 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
  dialog .field-grid{grid-template-columns:minmax(0,1fr)}
  .post-actions{gap:8px 16px}.post-actions button{padding:10px 14px}
 }
+
+input[data-review="true"]{border-color:#c08720;background:var(--soft)}

@@ -1,11 +1,13 @@
 export const METRICS=['impressions','reactions','comments','members_reached','reposts','saves','sends'];
+export const EXTRA_METRICS=['articles_read','email_sends','email_open_pct','profile_viewers','followers_gained'];
+export const METRIC_LABELS={articles_read:'Article views',email_sends:'Email sends',email_open_pct:'Email open %',profile_viewers:'Profile viewers from this post',followers_gained:'Followers gained from this post'};
 export const HOOKS=['Uncategorized','Question','Data/Stat','How-To/Promise','Problem/Mistake','Story','Contrarian','Curiosity/Open Loop'];
 export const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 export function shift(date,n){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
 export function range(preset,now=today()){let start=shift(now,-27),end=now;if(['7','28','90'].includes(preset))start=shift(now,1-Number(preset));if(preset==='month')start=now.slice(0,7)+'-01';if(preset==='lastmonth'){end=shift(now.slice(0,7)+'-01',-1);start=end.slice(0,7)+'-01';}if(preset==='year')start=now.slice(0,4)+'-01-01';if(preset==='all')start='2000-01-01';return {start,end};}
 export function canonical(value){if(!value?.trim())return '';const u=new URL(value);if(u.protocol!=='https:'||!['linkedin.com','www.linkedin.com','lnkd.in'].includes(u.hostname))throw Error('Use an HTTPS LinkedIn or lnkd.in post link.');['utm_source','utm_medium','utm_campaign','rcm','trk'].forEach(k=>u.searchParams.delete(k));u.hostname=u.hostname.replace(/^www\./,'');u.hash='';return u.toString();}
 export function number(value){const s=String(value??'').trim();if(!s)return null;if(!/^\d[\d,]*(?:\.\d+)?\s*[kKmM]?$/.test(s))throw Error('Use a count, such as 1234 or 1.2K.');const n=Number(s.replace(/[,kKmM\s]/g,''))*(/k$/i.test(s)?1000:/m$/i.test(s)?1e6:1);if(!Number.isSafeInteger(n)||n<0)throw Error('Counts must be positive whole numbers or zero.');return n;}
-const hookRules=[['Question','question',/^(?:why|what|how(?! to)|when|who|where|can|could|would|do|does|is|are)\b[^\n]*\?/,4],['Data/Stat','stat',/\b\d+(?:\.\d+)?\s*(?:%|percent|out of|people|companies|teams|users)\b|\d+(?:\.\d+)?%/,4],['How-To/Promise','how-to',/^(?:how to|here.s how|a guide to|learn how|\d+ ways to)\b/,4],['Problem/Mistake','mistake',/\b(?:biggest mistake|stop doing|struggling with|kept failing|kept showing up|went wrong|mistakes? you)\b/,4],['Story','story',/^(?:(?:last|this) (?:week|month|year|morning)|yesterday|when i|i (?:built|started|tried|learned|spent))\b/,3],['Contrarian','human-handoff',/^an ai[^.!?]{8,100}[.!?]\s*a human\b/,4],['Contrarian','contrast',/\b(?:unpopular opinion|everyone (?:says|thinks|believes).{0,100}\bbut|most people.{0,80}\bwrong|contrary to)\b/,5],['Curiosity/Open Loop','curiosity',/\b(?:i (?:never|didn.t) (?:told|tell|expect)|then (?:everything|something) changed|what happened next|didn.t see.{0,20}coming)\b/,4]];
+const hookRules=[['Question','question',/^(?:why|what|how(?! to)|when|who|where|can|could|would|do|does|is|are)\b[^\n]*\?/,4],['Data/Stat','stat',/\b\d+(?:\.\d+)?\s*(?:%|percent|out of|people|companies|teams|users)\b|\d+(?:\.\d+)?%/,4],['How-To/Promise','how-to',/^(?:how to|here.s how|a guide to|learn how|\d+ ways to)\b/,4],['Problem/Mistake','mistake',/\b(?:biggest mistake|stop doing|struggling with|kept failing|kept showing up|went wrong|mistakes? you)\b/,4],['Problem/Mistake','broken-result',/\b(?:found|discovered)\b.{0,35}\b(?:wrong|broken|mistakes?|issues?)\b/,4],['Story','story',/^(?:(?:last|this) (?:week|month|year|morning)|yesterday|when i|i (?:built|started|tried|learned|spent))\b/,3],['Contrarian','human-handoff',/^an ai[^.!?]{8,100}[.!?]\s*a human\b/,4],['Contrarian','contrast',/\b(?:unpopular opinion|everyone (?:says|thinks|believes).{0,100}\bbut|most people.{0,80}\bwrong|contrary to)\b/,5],['Curiosity/Open Loop','curiosity',/\b(?:i (?:never|didn.t) (?:told|tell|expect)|then (?:everything|something) changed|what happened next|didn.t see.{0,20}coming)\b/,4]];
 export function classify(text){const opening=String(text||'').normalize('NFKC').split(/\n/).filter(s=>s.trim()).slice(0,2).join('\n').slice(0,280).toLowerCase();const hits=hookRules.filter(r=>r[2].test(opening)).map(r=>({category:r[0],rule:r[1],score:r[3]})).sort((a,b)=>b.score-a.score);return {category:hits[0]&&hits[0].score>=3&&(!hits[1]||hits[0].score-hits[1].score>1)?hits[0].category:'Uncategorized',suggestions:hits.slice(0,2),version:'1'};}
 export function topics(text){const t=String(text).normalize('NFKC').toLowerCase();return [['AI agents',/\bagent(?:s|ic)?\b/],['Automation',/automat|workflow/],['Building with AI',/buildingwithai|\bi built\b|\bclaude\b|\bchatgpt\b/],['Operations',/operations|productivity|process/],['Career & work',/career|\bjobs?\b|hiring/]].filter(x=>x[1].test(t)).map(x=>x[0]);}
 const labels={impressions:'impressions?',reactions:'reactions?|likes?',comments:'comments?',members_reached:'members? reached|reach',reposts:'reposts?|reshares?',saves:'saves?',sends:'sends?'};
@@ -20,22 +22,40 @@ const s=summary(rows);const best=rows.filter(p=>p.m?.impressions!=null).sort((a,
 export function parseScreenshotText(text){
   const lines=String(text).normalize('NFKC').split(/\n/).map(s=>s.trim()).filter(Boolean),patch={},evidence={},conflicts=[];
   const numeric='(\\d[\\d,]*(?:\\.\\d+)?[ \\t]*[kKmM]?)';
-  const aliases={...labels,sends:'sends?(?: on linkedin)?',articles_read:'article(?:s)? (?:read|views?)',email_open_pct:'email open(?: rate)?'};
+  const aliases={...labels,sends:'sends?(?: on linkedin)?',articles_read:'article(?:s)? (?:read|views?)',email_sends:'email sends?',email_open_pct:'email open(?: rate)?',profile_viewers:'profile viewers?(?: from this post)?',followers_gained:'followers? gained(?: from this post)?'};
   for(const [key,label]of Object.entries(aliases)){
     const values=[];
     for(let i=0;i<lines.length;i++){
-      const line=lines[i].replace(/^[^a-z0-9]+/i,'').replace(/[\s>›»→|)]+$/g,'');
-      const labelRE=new RegExp('\\b(?:'+label+')\\b','i');
-      const match=labelRE.exec(line);if(!match)continue;
-      const before=line.slice(0,match.index).trim(),after=line.slice(match.index+match[0].length).trim();
-      const numberRE=new RegExp('^'+numeric+(key==='email_open_pct'?'%?':'')+'$','i');
-      const candidates=[before,after].map(s=>s.replace(/^[:=]\s*/,''));
-      if(!before&&!after){const neighbors=[lines[i-1],lines[i+1]].filter(Boolean).filter(s=>numberRE.test(s));if(neighbors.length===1)candidates.push(neighbors[0]);}
-      for(const candidate of candidates){const m=candidate.replace(/(\d)[ \t]+(?=\d)/g,'$1').match(numberRE);if(m){try{values.push(number(m[1]));evidence[key]=line;}catch{}}}
+      const line=lines[i].replace(/^[^a-z0-9]+/i,'').replace(/[\s>›»→|)]+$/g,'').replace(/(\d)[ \t]+(?=\d)/g,'$1');
+      // Match the complete label/value row: "Email sends" is never "Sends".
+      const valuePattern=numeric+(key==='email_open_pct'?'\\s*%?':'');
+      let match=line.match(new RegExp('^(?:'+label+')[ \\t]*[:=]?[ \\t]*'+valuePattern+'$','i'))||line.match(new RegExp('^'+valuePattern+'[ \\t]*(?:'+label+')$','i'));
+      if(!match&&new RegExp('^(?:'+label+')$','i').test(line)){
+        const neighbors=[lines[i-1],lines[i+1]].filter(Boolean).map(s=>s.replace(/(\d)[ \t]+(?=\d)/g,'$1')).filter(s=>new RegExp('^'+valuePattern+'$','i').test(s));
+        if(neighbors.length===1)match=neighbors[0].match(new RegExp('^'+valuePattern+'$','i'));
+      }
+      if(match){try{const value=key==='email_open_pct'?Number(match[1]):number(match[1]);if(key==='email_open_pct'&&(!Number.isFinite(value)||value<0||value>100))continue;values.push(value);evidence[key]=line;}catch{}}
     }
     const unique=[...new Set(values)];if(unique.length===1)patch[key]=unique[0];else if(unique.length>1)conflicts.push(key);
   }
   return {patch,evidence,conflicts};
+}
+
+// Keep readable fields even when another screenshot contains a conflicting value.
+export function mergeScreenshotResults(results){
+  const patch={},evidence={},conflicts=new Set(),bodies=[];
+  for(const result of results){
+    for(const key of result.conflicts||[]){conflicts.add(key);delete patch[key];}
+    for(const [key,value]of Object.entries(result.patch||{})){
+      if(conflicts.has(key))continue;
+      if(key in patch&&patch[key]!==value){conflicts.add(key);delete patch[key];}
+      else patch[key]=value;
+    }
+    Object.assign(evidence,result.evidence);
+    if(result.postText)bodies.push(result.postText);
+  }
+  if(bodies.length){patch.post_text=[...new Set(bodies)].join('\n\n');evidence.post_text='Post text read from content screenshot. Review the opening and wording.';}
+  return {patch,evidence,conflicts:[...conflicts]};
 }
 
 // OCR rows can contain navigation glyphs and values on either side of labels.
@@ -43,10 +63,10 @@ export function extractPostText(text){
   const raw=String(text||'').normalize('NFKC');
   if(/post analytics|social engagements|members reached|top demographics|profile activity|read my update|review & save|match an existing post/i.test(raw))return '';
   let lines=raw.split('\n').map(s=>s.trim());
-  while(lines.length&&(!lines[0]||/^\d{1,2}:\d{2}\b|^search\b|^[^a-z0-9]+$/i.test(lines[0])))lines.shift();
+  while(lines.length&&(!lines[0]||/^\d{1,2}:\d{2}\b|^search\b|^.{0,8}view my newsletter[^a-z]*$|^\d+\s*[smhdw]\b|^[^a-z0-9]+$/i.test(lines[0])))lines.shift();
   const end=lines.findIndex(s=>/^(?:home\s+network|notifications|like\s+comment|add a comment|network\s+post)\b/i.test(s));
   if(end>=0)lines=lines.slice(0,end);
   while(lines.length&&(!lines.at(-1)||!/[a-z]{2}/i.test(lines.at(-1))))lines.pop();
-  const unwrapped=[];for(const line of lines){if(line&&unwrapped.at(-1)&&!/[.!?:]$/.test(unwrapped.at(-1)))unwrapped[unwrapped.length-1]+=' '+line;else unwrapped.push(line);}const body=unwrapped.join('\n').trim().replace(/\bAl(?=\s+(?:agents?|assistants?|handle|has))/g,'AI');
+  const unwrapped=[];for(const line of lines){if(line&&unwrapped.at(-1)&&!/[.!?:]$/.test(unwrapped.at(-1)))unwrapped[unwrapped.length-1]+=' '+line;else unwrapped.push(line);}const body=unwrapped.join('\n').trim().replace(/(^|[ \n,.])\|(?=\s+[a-z])/gi,'$1I').replace(/BuildingWithAl\b/g,'BuildingWithAI').replace(/\bAl(?=\s+(?:agents?|assistants?|handle|has|rebuilt|pilots?|models?|tools?))/g,'AI');
   return body.length>=60&&body.split(/\s+/).length>=12?body:'';
 }
