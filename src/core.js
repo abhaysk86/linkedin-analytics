@@ -7,8 +7,41 @@ export function shift(date,n){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d
 export function range(preset,now=today()){let start=shift(now,-27),end=now;if(['7','28','90'].includes(preset))start=shift(now,1-Number(preset));if(preset==='month')start=now.slice(0,7)+'-01';if(preset==='lastmonth'){end=shift(now.slice(0,7)+'-01',-1);start=end.slice(0,7)+'-01';}if(preset==='year')start=now.slice(0,4)+'-01-01';if(preset==='all')start='2000-01-01';return {start,end};}
 export function canonical(value){if(!value?.trim())return '';const u=new URL(value);if(u.protocol!=='https:'||!['linkedin.com','www.linkedin.com','lnkd.in'].includes(u.hostname))throw Error('Use an HTTPS LinkedIn or lnkd.in post link.');['utm_source','utm_medium','utm_campaign','rcm','trk'].forEach(k=>u.searchParams.delete(k));u.hostname=u.hostname.replace(/^www\./,'');u.hash='';return u.toString();}
 export function number(value){const s=String(value??'').trim();if(!s)return null;if(!/^\d[\d,]*(?:\.\d+)?\s*[kKmM]?$/.test(s))throw Error('Use a count, such as 1234 or 1.2K.');const n=Number(s.replace(/[,kKmM\s]/g,''))*(/k$/i.test(s)?1000:/m$/i.test(s)?1e6:1);if(!Number.isSafeInteger(n)||n<0)throw Error('Counts must be positive whole numbers or zero.');return n;}
-const hookRules=[['Question','question',/^(?:why|what|how(?! to)|when|who|where|can|could|would|do|does|is|are)\b[^\n]*\?/,4],['Data/Stat','stat',/\b\d+(?:\.\d+)?\s*(?:%|percent|out of|people|companies|teams|users)\b|\d+(?:\.\d+)?%/,4],['How-To/Promise','how-to',/^(?:how to|here.s how|a guide to|learn how|\d+ ways to)\b/,4],['Problem/Mistake','mistake',/\b(?:biggest mistake|stop doing|struggling with|kept failing|kept showing up|went wrong|mistakes? you)\b/,4],['Problem/Mistake','broken-result',/\b(?:found|discovered)\b.{0,35}\b(?:wrong|broken|mistakes?|issues?)\b/,4],['Story','story',/^(?:(?:last|this) (?:week|month|year|morning)|yesterday|when i|i (?:built|started|tried|learned|spent))\b/,3],['Contrarian','human-handoff',/^an ai[^.!?]{8,100}[.!?]\s*a human\b/,4],['Contrarian','contrast',/\b(?:unpopular opinion|everyone (?:says|thinks|believes).{0,100}\bbut|most people.{0,80}\bwrong|contrary to)\b/,5],['Curiosity/Open Loop','curiosity',/\b(?:i (?:never|didn.t) (?:told|tell|expect)|then (?:everything|something) changed|what happened next|didn.t see.{0,20}coming)\b/,4]];
-export function classify(text){const opening=String(text||'').normalize('NFKC').split(/\n/).filter(s=>s.trim()).slice(0,2).join('\n').slice(0,280).toLowerCase();const hits=hookRules.filter(r=>r[2].test(opening)).map(r=>({category:r[0],rule:r[1],score:r[3]})).sort((a,b)=>b.score-a.score);return {category:hits[0]&&hits[0].score>=3&&(!hits[1]||hits[0].score-hits[1].score>1)?hits[0].category:'Uncategorized',suggestions:hits.slice(0,2),version:'1'};}
+const hookRules=[
+  ['Question','question',/^(?:why|what|how(?! to)|when|who|where|can|could|would|do|does|is|are)\b.*\?/,4,'The opening asks a direct question.'],
+  ['Data/Stat','stat',/\b\d+(?:\.\d+)?\s*(?:%|percent|out of|people|companies|teams|users)\b|\d+(?:\.\d+)?%/,4,'The opening leads with a number or statistic.'],
+  ['How-To/Promise','how-to',/^(?:how to|here.s how|a guide to|learn how|\d+ ways to)\b/,4,'The opening promises a method or practical guide.'],
+  ['Problem/Mistake','mistake',/\b(?:biggest mistake|stop doing|struggling with|kept failing|kept showing up|went wrong|mistakes? you)\b/,4,'The opening identifies a problem or mistake.'],
+  ['Problem/Mistake','broken-result',/\b(?:found|discovered)\b.{0,35}\b(?:wrong|broken|mistakes?|issues?)\b/,4,'The opening reveals something that went wrong.'],
+  ['Problem/Mistake','outcome-gap',/^[^.!?]{0,120}\b(?:kept|keeps)\b[^.!?]{1,100}[.!?]\s*(?:but\s+)?(?:i|we)\s+(?:wanted|needed)\s+(?:it|them)\s+to\b/,4,'The repeated result is contrasted with the outcome you wanted.'],
+  ['Problem/Mistake','expectation-gap',/\b(?:i|we)\s+(?:wanted|needed|expected)\b.{1,90}\b(?:but|instead|yet)\b.{1,70}\b(?:got|gave|kept|found|was|were|didn.t|couldn.t)\b/,4,'The opening contrasts an intended outcome with what happened.'],
+  ['Story','story',/^(?:(?:last|this) (?:week|month|year|morning)|yesterday|when i|i (?:built|started|tried|learned|spent))\b/,3,'The opening introduces a personal experience.'],
+  ['Contrarian','human-handoff',/^an ai[^.!?]{8,100}[.!?]\s*a human\b/,4,'The opening contrasts an AI outcome with the human work behind it.'],
+  ['Contrarian','contrast',/\b(?:unpopular opinion|everyone (?:says|thinks|believes).{0,100}\bbut|most people.{0,80}\bwrong|contrary to)\b/,5,'The opening challenges a commonly held view.'],
+  ['Curiosity/Open Loop','curiosity',/\b(?:i (?:never|didn.t) (?:told|tell|expect)|then (?:everything|something) changed|what happened next|didn.t see.{0,20}coming)\b/,4,'The opening withholds an outcome or introduces a surprise.']
+];
+export function classify(text){
+  // OCR line wrapping must not change the hook. Stop at the first paragraph or
+  // two sentences so questions in the body/closing CTA do not become the hook.
+  let opening=String(text||'').normalize('NFKC').trim().split(/\n\s*\n/)[0].replace(/\s+/g,' ').replace(/[‘’]/g,"'");
+  const ends=[...opening.matchAll(/[.!?]["')\]]*(?=\s|$)/g)];
+  if(ends[1])opening=opening.slice(0,ends[1].index+ends[1][0].length);
+  opening=opening.slice(0,280).toLowerCase();
+  const byCategory=new Map();
+  for(const [category,rule,pattern,score,reason]of hookRules){
+    if(pattern.test(opening)&&(!byCategory.has(category)||score>byCategory.get(category).score))byCategory.set(category,{category,rule,score,reason});
+  }
+  const hits=[...byCategory.values()].sort((a,b)=>b.score-a.score);
+  // A generic personal-story frame can support a more specific rhetorical hook.
+  const competing=hits.filter(h=>h.category!=='Story'||hits[0]?.category==='Story');
+  const clear=hits[0]&&hits[0].score>=3&&(!competing[1]||hits[0].score-competing[1].score>1);
+  return {category:clear?hits[0].category:'Uncategorized',suggestions:hits.slice(0,2),reason:clear?hits[0].reason:'',version:'2'};
+}
+export function hookFeedback(result,manual=false){
+  let message=result.category!=='Uncategorized'?'Suggested: '+result.category+'. '+result.reason:result.suggestions.length?'Possible hooks: '+result.suggestions.map(s=>s.category).join(' / ')+'. Choose a category.':'No clear hook rule matched the opening. Choose a category.';
+  if(manual)message+=' Your manual hook choice is kept.';
+  return message;
+}
 export function topics(text){const t=String(text).normalize('NFKC').toLowerCase();return [['AI agents',/\bagent(?:s|ic)?\b/],['Automation',/automat|workflow/],['Building with AI',/buildingwithai|\bi built\b|\bclaude\b|\bchatgpt\b/],['Operations',/operations|productivity|process/],['Career & work',/career|\bjobs?\b|hiring/]].filter(x=>x[1].test(t)).map(x=>x[0]);}
 const labels={impressions:'impressions?',reactions:'reactions?|likes?',comments:'comments?',members_reached:'members? reached|reach',reposts:'reposts?|reshares?',saves:'saves?',sends:'sends?'};
 export function parse(text){const patch={},evidence={},conflicts=[];if(/\b(?:increase|increment|add)\b.{0,30}\bby\s+\d/i.test(text))throw Error('Enter absolute counts, for example “set impressions to 515”.');for(const [key,label] of Object.entries(labels)){if(new RegExp('(?:<\\s*\\d+|\\d+\\s*[-–]\\s*\\d+)\\s*(?:'+label+')','i').test(text))continue;const vals=[];const patterns=[new RegExp('(?:'+label+')\\s*(?:to|:|=)?\\s*([<]?\\d[\\d,.]*[ \t]*[kKmM]?(?![a-zA-Z]))(?![\\d])','ig'),new RegExp('([<]?\\d[\\d,.]*[ \t]*[kKmM]?(?![a-zA-Z]))\\s*(?:'+label+')\\b','ig')];for(const re of patterns)for(const m of text.matchAll(re)){try{if(m[1].includes('<')||/\d\s*[-–]\s*\d/.test(m[0]))continue;vals.push(number(m[1].trim()));evidence[key]=m[0];}catch{}}const unique=[...new Set(vals)];if(unique.length===1)patch[key]=unique[0];if(unique.length>1)conflicts.push(key);if(new RegExp('clear\\s+(?:'+label+')','i').test(text))patch[key]=null;}

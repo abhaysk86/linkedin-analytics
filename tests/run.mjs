@@ -50,3 +50,27 @@ assert.equal(call(articleSave).ok,true);
 const storedArticle=call({action:'bootstrap'}).measurements.find(m=>m.measurement_id==='measurement-article-01');
 assert.equal(storedArticle.sends,0);assert.equal(storedArticle.email_sends,133);assert.equal(storedArticle.articles_read,57);assert.equal(storedArticle.profile_viewers,0);assert.equal(storedArticle.followers_gained,0);assert.equal(storedArticle.captured_at_utc,'2026-11-03T03:30:00.000Z');
 console.log('Article capture, partial conflicts, newsletter text and Sheet round-trip regressions passed.');
+
+// Hook suggestions: outcome gaps, OCR wrapping, duplicate rules and real ambiguity.
+const {hookFeedback}=await import('../src/core.js');
+const briefOpening='My daily AI brief kept finding news. I wanted it to find ideas worth exploring.';
+for(const opening of [briefOpening,'My daily AI brief kept finding\nnews. I wanted it to find ideas\nworth exploring.', 'Our weekly report keeps listing tickets. We needed it to highlight delays.', 'I expected a finished report, but instead I got a list of links.']){
+  assert.equal(classify(opening).category,'Problem/Mistake',opening);
+}
+const matchingProblemRules=classify('I learned the biggest mistake when I found the workflow was broken.');
+assert.equal(matchingProblemRules.category,'Problem/Mistake');
+assert.equal(matchingProblemRules.suggestions.filter(s=>s.category==='Problem/Mistake').length,1);
+assert.equal(classify('I built a dashboard last weekend. It now tracks our orders.').category,'Story');
+assert.equal(classify('How to build an AI\nbrief that surfaces useful ideas.').category,'How-To/Promise');
+assert.equal(classify('Why does our daily brief\nkeep repeating the same stories?').category,'Question');
+assert.equal(classify('57% of teams changed their workflow.').category,'Data/Stat');
+assert.equal(classify('Everyone says automation saves time. But the handoffs still take hours.').category,'Contrarian');
+assert.equal(classify("I didn’t expect what happened next.").category,'Curiosity/Open Loop');
+assert.equal(classify('The brief brings me news every day. It also includes useful ideas.').category,'Uncategorized');
+assert.equal(classify('My brief kept finding news. It includes what I wanted it to find.').category,'Uncategorized');
+assert.equal(classify('A regular opening. A second ordinary sentence.\n\nWhy do we repeat this?').category,'Uncategorized');
+assert.equal(classify('Why do 57% of teams struggle with handoffs?').category,'Uncategorized');
+assert.equal(classify(briefOpening).version,'2');
+assert.match(hookFeedback(classify(briefOpening)),/Suggested: Problem\/Mistake.*outcome you wanted/);
+assert.match(hookFeedback(classify(briefOpening),true),/manual hook choice is kept/);
+console.log('Hook outcome-gap, line-wrap, same-category scoring and conservative fallback regressions passed.');

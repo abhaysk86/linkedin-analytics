@@ -40,3 +40,9 @@ New capture timing defaults to Now at review; old draft timestamps are discarded
 - Strip newsletter header noise from captured post text, correct common OCR I/AI artifacts and suggest a problem/mistake hook for a broken-result opening.
 - Reproduce with the three supplied iPhone screenshots: 109 impressions, 62 reached, 5 reactions, 57 article views, 133 email sends, 26% email open rate, and confirmed zeros for other shown metrics.
 - Backend deployment version 4 retains the same URL and access setting.
+
+## 4 November — hook suggestions only
+
+- Hook classification was active but had no rule for repeated output versus the outcome wanted. Added outcome/expectation-gap patterns, which suggest Problem/Mistake for the daily AI brief opening.
+- Classify the opening paragraph/two sentences independently of OCR line wrapping. Merge matching rules by category before comparing scores; repeated support for one category is no longer treated as ambiguity. A generic Story frame does not block a more specific hook.
+- Explain the matched hook rule in the capture form, retain manual overrides, and persist suggestions requested with the button into the draft. No historical entries are recategorized automatically.

@@ -1,4 +1,4 @@
-import {parseScreenshotText,extractPostText,mergeScreenshotResults} from './core.js?v=20261103-2';
+import {parseScreenshotText,extractPostText,mergeScreenshotResults} from './core.js?v=20261104-1';
 let worker;
 export async function readScreenshots(files,onProgress,signal){
   if(files.length>6)throw Error('Choose at most six screenshots for one post.');
