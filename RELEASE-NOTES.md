@@ -46,3 +46,11 @@ New capture timing defaults to Now at review; old draft timestamps are discarded
 - Hook classification was active but had no rule for repeated output versus the outcome wanted. Added outcome/expectation-gap patterns, which suggest Problem/Mistake for the daily AI brief opening.
 - Classify the opening paragraph/two sentences independently of OCR line wrapping. Merge matching rules by category before comparing scores; repeated support for one category is no longer treated as ambiguity. A generic Story frame does not block a more specific hook.
 - Explain the matched hook rule in the capture form, retain manual overrides, and persist suggestions requested with the button into the draft. No historical entries are recategorized automatically.
+
+## 13 November — broader hook coverage and review controls
+
+- Expanded deterministic rhetorical families: conditional/embedded questions, numerical and written-word statistics, narrative scenes and dialogue, remaining-friction/capability gaps, and several explicit contrast structures. Topics are not used as a substitute for rhetorical evidence.
+- Clear and likely matches fill automatically. Weak matches and equally strong competing categories stay Uncategorized with one-tap alternatives. The form shows the opening used, explains the match, preserves manual choices, and offers an explicit return to automatic suggestions.
+- Kept existing category names and saved records. No backfill, Sheet write, backend change, LLM call or model training is part of this release.
+- Read-only audit of 49 saved openings on 13 November: automatic suggestions increased from 11 to 46; latest 11 increased from 5 to 10. The remaining recent case is a greeting. This is coverage on an inspected corpus, not accuracy or an independent holdout result. Manual historic labels were not treated as ground truth.
+- Added 38 separate synthetic positive fixtures, line-wrap variants, negative/negation cases, mixed-hook ambiguity and conservative fallback checks.

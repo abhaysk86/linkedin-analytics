@@ -17,3 +17,6 @@ input::-webkit-date-and-time-value{text-align:left;min-width:0}
 }
 
 input[data-review="true"]{border-color:#c08720;background:var(--soft)}
+
+.hook-feedback{margin:10px 0 18px}.hook-feedback p{margin:8px 0}.hook-options{display:flex;flex-wrap:wrap;gap:8px}.hook-options button{font-size:13px;text-align:left;overflow-wrap:anywhere}.hook-feedback details{padding:8px 0}.hook-feedback #hook-opening{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:760px){.hook-options{display:grid;grid-template-columns:minmax(0,1fr)}.hook-options button{width:100%}}

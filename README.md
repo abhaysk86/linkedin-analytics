@@ -27,3 +27,5 @@ One update per post is sufficient. Extra observations are optional and never add
 OCR uses pinned Tesseract.js 6.0.1 and core 6.0.0, downloaded on demand from jsDelivr. Recognition runs on the device; image bytes are not uploaded. Cold OCR needs network, and phone memory/speed vary. Unsupported or ambiguous screenshots require manual correction. The parser supports explicit counts, links, hook/date edits and clear commands, not unrestricted language. No save occurs until review.
 
 The installed app retains the root URL. The service worker avoids forced updates during active use; reopening after closing existing instances activates the waiting worker. Offline writes are queued and retried while the app is open; no background-sync guarantee on iOS.
+
+Hook suggestions use the deterministic patterns in `src/hooks-v3.js`. They return a category only for a clear or likely match; review cases offer choices. Scores are rule strengths, not probabilities. To change the classifier after release, use a new module filename/version and update the service-worker asset list together. Run `npm test` for hook-family and capture regressions.

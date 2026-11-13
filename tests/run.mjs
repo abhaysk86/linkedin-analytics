@@ -64,13 +64,17 @@ assert.equal(classify('I built a dashboard last weekend. It now tracks our order
 assert.equal(classify('How to build an AI\nbrief that surfaces useful ideas.').category,'How-To/Promise');
 assert.equal(classify('Why does our daily brief\nkeep repeating the same stories?').category,'Question');
 assert.equal(classify('57% of teams changed their workflow.').category,'Data/Stat');
-assert.equal(classify('Everyone says automation saves time. But the handoffs still take hours.').category,'Contrarian');
+assert.equal(classify('Everyone says automation saves time. But the handoffs still take hours.').category,'Uncategorized');
 assert.equal(classify("I didn’t expect what happened next.").category,'Curiosity/Open Loop');
 assert.equal(classify('The brief brings me news every day. It also includes useful ideas.').category,'Uncategorized');
 assert.equal(classify('My brief kept finding news. It includes what I wanted it to find.').category,'Uncategorized');
 assert.equal(classify('A regular opening. A second ordinary sentence.\n\nWhy do we repeat this?').category,'Uncategorized');
-assert.equal(classify('Why do 57% of teams struggle with handoffs?').category,'Uncategorized');
-assert.equal(classify(briefOpening).version,'2');
+assert.equal(classify('Why do 57% of teams struggle with handoffs?').category,'Question');
+assert.equal(classify(briefOpening).version,'3');
 assert.match(hookFeedback(classify(briefOpening)),/Suggested: Problem\/Mistake.*outcome you wanted/);
 assert.match(hookFeedback(classify(briefOpening),true),/manual hook choice is kept/);
 console.log('Hook outcome-gap, line-wrap, same-category scoring and conservative fallback regressions passed.');
+
+const {runHookTests}=await import('./hooks.mjs');
+const {hookOpening}=await import('../src/core.js');
+runHookTests(classify,hookFeedback,hookOpening);
